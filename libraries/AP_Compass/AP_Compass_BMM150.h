@@ -20,6 +20,8 @@
 
 #if AP_COMPASS_BMM150_ENABLED
 
+#define USE_BMM_SENSOR_API 1
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -27,6 +29,11 @@
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
+
+#if USE_BMM_SENSOR_API
+#include "bmm150_defs.h"
+#include "bmm150.h"
+#endif  // USE_BMM_SENSOR_API
 
 #define BMM150_I2C_ADDR_MIN 0x10
 #define BMM150_I2C_ADDR_MAX 0x13
@@ -39,6 +46,14 @@ public:
     void read() override;
 
     static constexpr const char *name = "BMM150";
+
+#if USE_BMM_SENSOR_API
+    //! @note trampoline functions for the bmm150 interface. 
+    static BMM150_INTF_RET_TYPE bmm150_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr);
+    static BMM150_INTF_RET_TYPE bmm150_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr);
+    static void bmm150_delay_us(uint32_t period, void *intf_ptr);
+    //! @todo end remove
+#endif  // USE_BMM_SENSOR_API
 
 private:
     AP_Compass_BMM150(AP_HAL::OwnPtr<AP_HAL::Device> dev, bool force_external, enum Rotation rotation);
@@ -73,6 +88,10 @@ private:
     uint32_t _last_read_ms;
     enum Rotation _rotation;
     bool _force_external;
+
+#if USE_BMM_SENSOR_API
+    struct bmm150_dev magdev;
+#endif  // USE_BMM_SENSOR_API
 };
 
 #endif  // AP_COMPASS_BMM150_ENABLED
