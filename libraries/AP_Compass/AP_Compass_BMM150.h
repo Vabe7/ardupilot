@@ -52,6 +52,7 @@ public:
     static BMM150_INTF_RET_TYPE bmm150_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr);
     static BMM150_INTF_RET_TYPE bmm150_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr);
     static void bmm150_delay_us(uint32_t period, void *intf_ptr);
+    static void bmm150_error_codes_print_result(const char api_name[], int8_t rslt);
     //! @todo end remove
 #endif  // USE_BMM_SENSOR_API
 

@@ -85,7 +85,7 @@ BMM150_INTF_RET_TYPE AP_Compass_BMM150::bmm150_write(uint8_t reg_addr, const uin
     AP_Compass_BMM150* bmm_150 = (AP_Compass_BMM150*)intf_ptr;
     const uint8_t one_byte = 0x01;
     uint8_t reg = reg_addr;
-    for (int i=0; i<length; ++i) {
+    for (uint i=0; i<length; ++i) {
         reg += one_byte;
         uint8_t val = reg_data[i];
         bool result = bmm_150->_dev->write_register(reg, val);
@@ -101,7 +101,7 @@ void AP_Compass_BMM150::bmm150_delay_us(uint32_t period, void */*intf_ptr*/)
     hal.scheduler->delay_microseconds(period);
 }
 
-void bmm150_error_codes_print_result(const char api_name[], int8_t rslt)
+void AP_Compass_BMM150::bmm150_error_codes_print_result(const char api_name[], int8_t rslt)
 {
     if (rslt != BMM150_OK)
     {
@@ -230,7 +230,7 @@ bool AP_Compass_BMM150::init()
     magdev.delay_us = AP_Compass_BMM150::bmm150_delay_us;
     magdev.intf_ptr = this;
 
-#if 0 //USE_BMM_SENSOR_API
+#if !(USE_BMM_SENSOR_API) //USE_BMM_SENSOR_API
     _dev->get_semaphore()->take_blocking();
 
     // 10 retries for init
@@ -518,7 +518,7 @@ int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall) const
     divisor += _dig.z2;
 
     int16_t ret = constrain_int32(dividend2 / divisor, -0x8000, 0x8000);
-#if 0
+#if !(USE_BMM_SENSOR_API)
     static uint8_t counter;
     if (counter++ == 0) {
         printf("ret=%d z=%d rhall=%u z1=%d z2=%d z3=%d z4=%d xyz1=%d dividend=%d dividend2=%d divisor=%d\n",
@@ -549,12 +549,12 @@ void AP_Compass_BMM150::_update()
             // cope with power cycle to sensor
             _last_read_ms = now;
 
-            uint8_t reg_data;
-            reg_data = BMM150_SET_SOFT_RESET;
-            rslt = bmm150_set_regs(BMM150_REG_POWER_CONTROL, &reg_data, 1, &magdev);
+            uint8_t reg_data_reset;
+            reg_data_reset = BMM150_SET_SOFT_RESET;
+            rslt = bmm150_set_regs(BMM150_REG_POWER_CONTROL, &reg_data_reset, 1, &magdev);
 
-            reg_data = BMM150_POWER_CNTRL_ENABLE;
-            rslt = bmm150_set_regs(BMM150_REG_POWER_CONTROL, &reg_data, 1, &magdev);
+            reg_data_reset = BMM150_POWER_CNTRL_ENABLE;
+            rslt = bmm150_set_regs(BMM150_REG_POWER_CONTROL, &reg_data_reset, 1, &magdev);
         }
         return;
     }
