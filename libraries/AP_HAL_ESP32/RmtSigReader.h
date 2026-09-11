@@ -15,28 +15,47 @@
  */
 #pragma once
 
-#include <AP_HAL/utility/RingBuffer.h>
 #include "AP_HAL_ESP32.h"
-#include "driver/rmt.h"
+#include "driver/rmt_rx.h"
+#include "atomic"
 
 class ESP32::RmtSigReader
 {
 public:
-    static const int frequency = 1000000;  //1MHZ
-    static const int max_pulses = 128;
-    static const int idle_threshold = 3000;  //we require at least 3ms gap between frames
+    static constexpr uint32_t frequency = 1000000;
+    static constexpr size_t max_pulses = 128;
+    static constexpr uint32_t idle_threshold = 3000;
+
     void init();
     bool read(uint32_t &width_high, uint32_t &width_low);
+
 private:
+    struct RxBuffer {
+        rmt_symbol_word_t symbols[max_pulses];
+    };
+
+    static bool on_receive_done(
+        rmt_channel_handle_t channel,
+        const rmt_rx_done_event_data_t *edata,
+        void *user_data);
+
     bool add_item(uint32_t duration, bool level);
+    void process_symbol(const rmt_symbol_word_t &symbol);
 
-    RingbufHandle_t handle;
-    rmt_item32_t* item;
-    size_t item_size;
-    size_t current_item;
+    rmt_channel_handle_t channel = nullptr;
+    rmt_receive_config_t receive_config{};
 
-    uint32_t last_high;
-    uint32_t ready_high;
-    uint32_t ready_low;
-    bool pulse_ready;
+    RxBuffer rx_buffers[2];
+
+    std::atomic<uint8_t> active_buffer{0};
+    std::atomic<int8_t> ready_buffer{-1};
+    std::atomic<int8_t> processing_buffer{-1};
+
+    size_t current_symbol = 0;
+    bool processing = false;
+
+    uint32_t last_high = 0;
+    uint32_t ready_high = 0;
+    uint32_t ready_low = 0;
+    bool pulse_ready = false;
 };
