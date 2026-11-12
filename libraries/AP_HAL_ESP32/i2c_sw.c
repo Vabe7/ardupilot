@@ -52,14 +52,12 @@
 #include "malloc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-#include "xtensa_api.h"
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
-#include "soc/dport_reg.h"
 #include "esp_pm.h"
 #include "soc/soc_memory_layout.h"
 //#include "hal/i2c_hal.h"
-#include "soc/i2c_periph.h"
+#include "hal/i2c_periph.h"
 #include "driver/i2c.h"
 //#include "driver/periph_ctrl.h"
 #include "lwip/netdb.h"
@@ -69,8 +67,35 @@
 #define I2C_CLOCK_STRETCH 200
 
 /* gpio access macros */
-#define GPIO_SET(l,h,b) if (b < 32) GPIO.l =  BIT(b); else GPIO.h.val =  BIT(b-32)
-#define GPIO_GET(l,h,b) ((b < 32) ? GPIO.l & BIT(b) : GPIO.h.val & BIT(b-32))
+#if defined(CONFIG_IDF_TARGET_ESP32S31)
+
+#define GPIO_SET(l,h,b) \
+    do { \
+        if ((b) < 32) { \
+            GPIO.l.val = BIT(b); \
+        } else { \
+            GPIO.h.val = BIT((b)-32); \
+        } \
+    } while (0)
+
+#define GPIO_GET(l,h,b) \
+    ((b) < 32 ? GPIO.l.val & BIT(b) : GPIO.h.val & BIT((b)-32))
+
+#else
+
+#define GPIO_SET(l,h,b) \
+    do { \
+        if ((b) < 32) { \
+            GPIO.l = BIT(b); \
+        } else { \
+            GPIO.h.val = BIT((b)-32); \
+        } \
+    } while (0)
+
+#define GPIO_GET(l,h,b) \
+    ((b) < 32 ? GPIO.l & BIT(b) : GPIO.h.val & BIT((b)-32))
+
+#endif
 
 /* to ensure that I2C is always optimized with -O2 to use the defined delays */
 #pragma GCC optimize ("O2")
@@ -274,12 +299,27 @@ int IRAM_ATTR i2c_write_bytes(_i2c_bus_t* bus, uint16_t addr, const void *data, 
 
 static inline void _i2c_delay(_i2c_bus_t* bus)
 {
-    /* produces a delay */
     uint32_t cycles = bus->delay;
-    if (cycles) {
-        __asm__ volatile ("1: _addi.n  %0, %0, -1 \n"
-                          "   bnez     %0, 1b     \n" : "=r" (cycles) : "0" (cycles));
+
+    if (cycles == 0) {
+        return;
     }
+
+#if defined(__riscv)
+    // RISC-V implementation
+    __asm__ volatile (
+        "1: addi %0, %0, -1\n"
+        "   bnez %0, 1b\n"
+        : "+r" (cycles)
+    );
+#else
+    // Xtensa implementation
+    __asm__ volatile (
+        "1: _addi.n %0, %0, -1\n"
+        "   bnez %0, 1b\n"
+        : "+r" (cycles)
+    );
+#endif
 }
 
 /*

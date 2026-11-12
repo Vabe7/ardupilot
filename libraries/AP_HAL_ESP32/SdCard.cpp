@@ -20,7 +20,32 @@
 
 #include "SdCard.h"
 
+// FatFS requires MIN and MAX macros from sys/param.h.
+// AP_Math undefines these macros and provides C++ alternatives.
+// Restore them temporarily for the FatFS headers.
+
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define AP_FS_DEFINED_MIN
+#endif
+
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define AP_FS_DEFINED_MAX
+#endif
+
 #include "esp_vfs_fat.h"
+
+#ifdef AP_FS_DEFINED_MIN
+#undef MIN
+#undef AP_FS_DEFINED_MIN
+#endif
+
+#ifdef AP_FS_DEFINED_MAX
+#undef MAX
+#undef AP_FS_DEFINED_MAX
+#endif
+
 #include "esp_ota_ops.h"
 
 #include "driver/sdmmc_host.h"

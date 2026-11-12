@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # if you have modules/esp_idf setup as a submodule, then leave it as a submodule and switch branches
 
-COMMIT="cc3203dc4f087ab41b434afff1ed7520c6d90993"
+COMMIT="fff9895"
 
 if [ ! -d modules ]; then
 echo "this script needs to be run from the root of your repo, sorry, giving up."
@@ -27,7 +27,7 @@ else
     if  [ ! `ls  esp_idf/install.sh 2>/dev/null` ]; then
         echo "found empty IDF, cloning"
         # add esp_idf as almost submodule, depths  uses less space
-        git clone -b 'release/v5.3'  https://github.com/espressif/esp-idf.git esp_idf
+        git clone -b 'release/v6.1'  https://github.com/espressif/esp-idf.git esp_idf
         git checkout $COMMIT
     fi
 fi
@@ -37,17 +37,17 @@ cd esp_idf
 echo `git rev-parse HEAD`
 # these are a selection of possible specific commit/s that represent v5.3 branch of the esp_idf 
 if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
-    echo "IDF version 'release/5.3' found OK, great."; 
+    echo "IDF version 'release/6.1' found OK, great."; 
 else
-    echo "looks like an idf, but not v5.3 branch, or wrong commit , trying to switch branch and reflect upstream";
+    echo "looks like an idf, but not v6.1 branch, or wrong commit , trying to switch branch and reflect upstream";
     ../../Tools/gittools/submodule-sync.sh >/dev/null
-    git fetch ; git checkout -f release/v5.3 
+    git fetch ; git checkout -f release/v6.1 
     git checkout $COMMIT
 
     # retry same as above
     echo `git rev-parse HEAD`
     if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
-        echo "IDF version 'release/5.3' found OK, great."; 
+        echo "IDF version 'release/6.1' found OK, great."; 
         git checkout $COMMIT
     fi
 fi
@@ -64,6 +64,6 @@ python3 -m pip install pexpect
 cd ../..
 
 echo
-echo "after changing IDF versions [ such as between 4.4 and 5.3 ] you should re-run these in your console:"
+echo "after changing IDF versions [ such as between 5.3 and 6.1 ] you should re-run these in your console:"
 echo "./modules/esp_idf/install.sh"
 echo "source ./modules/esp_idf/export.sh"
